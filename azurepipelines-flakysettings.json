@@ -1,0 +1,7 @@
+{
+  "FailureRateThreshold": 30,
+  "PassRateThreshold": 60,
+  "CoefficientOfVariationThreshold": 10,
+  "RerunCountThreshold": 0,
+  "TWSThreshold": 30
+}
