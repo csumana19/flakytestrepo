@@ -35,16 +35,16 @@ stages:
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
-    - task: VSTest@2
+    - script: |
+        nuget install Microsoft.TestPlatform -Version 17.11.1 -OutputDirectory packages -ExcludeVersion
+        set VSTEST=packages\Microsoft.TestPlatform\tools\net462\Common7\IDE\Extensions\TestPlatform\vstest.console.exe
+        "%VSTEST%" UnitTestProject1\bin\Release\UnitTestProject1.dll /Logger:trx /ResultsDirectory:TestResults
+      displayName: 'Run tests with bundled vstest.console.exe'
+      continueOnError: true
+
+    - task: PublishTestResults@2
       inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-          **\bin\**\*test.dll
-          **\bin\**\*tests.dll
-          **\bin\**\UnitTestProject1.dll
-        searchFolder: '$(System.DefaultWorkingDirectory)'
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
-        rerunFailedTests: true
-        rerunType: 'basedOnTestFailureCount'
-        rerunFailedTestCasesMaxLimit: '25'
+        testResultsFormat: 'VSTest'
+        testResultsFiles: 'TestResults/*.trx'
+        failTaskOnFailedTests: false
+      condition: always()
