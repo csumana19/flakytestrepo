@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  vmImage: 'windows-latest'
+  name: default
 
 variables:
   solution: '**/*.sln'
@@ -22,7 +22,7 @@ stages:
   
   - job: Build
     pool:
-      vmImage: 'windows-latest'
+      name: default
     steps:
     - task: NuGetToolInstaller@1
 
