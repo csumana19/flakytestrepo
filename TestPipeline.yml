@@ -1,9 +1,12 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# Repro pipeline for tbl_TestFlaky branch-key normalization bug.
+# Runs on push to master (rolling) AND on PRs targeting master (PR validation).
+# Each path writes a different BuildConfiguration row, which surfaces the
+# bare-vs-prefixed branch-key mismatch in tbl_TestFlaky.
 
 trigger:
+- master
+
+pr:
 - master
 
 pool:
@@ -19,7 +22,6 @@ stages:
 - stage: build
   displayName: Build
   jobs:
-  
   - job: Build
     pool:
       name: default
@@ -27,7 +29,7 @@ stages:
     - task: NuGetToolInstaller@1
 
     - script: nuget restore UnitTestProject1.sln
-      displayName: 'NuGet restore (script bypass)'
+      displayName: 'NuGet restore'
 
     - task: VSBuild@1
       inputs:
@@ -35,16 +37,34 @@ stages:
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
-    - script: |
-        nuget install Microsoft.TestPlatform -Version 17.11.1 -OutputDirectory packages -ExcludeVersion
-        set VSTEST=packages\Microsoft.TestPlatform\tools\net462\Common7\IDE\Extensions\TestPlatform\vstest.console.exe
-        "%VSTEST%" UnitTestProject1\bin\Release\UnitTestProject1.dll /Logger:trx /ResultsDirectory:TestResults
-      displayName: 'Run tests with bundled vstest.console.exe'
-      continueOnError: true
-
-    - task: PublishTestResults@2
+    # Download the VSTest platform from NuGet so the self-hosted agent does not
+    # need a Visual Studio installation to run tests.
+    - task: VisualStudioTestPlatformInstaller@1
+      displayName: 'Install VSTest platform'
       inputs:
-        testResultsFormat: 'VSTest'
-        testResultsFiles: 'TestResults/*.trx'
+        packageFeedSelector: 'nugetOrg'
+        versionSelector: 'latestStable'
+
+    # VSTest@2 with rerunFailedTests=true so the deliberately-flaky test
+    # fails once, passes on rerun, and ADO records it as a rerun-passed
+    # flaky candidate. prc_MarkTestCaseRefsFlaky only inserts rows for
+    # tests that pass on rerun.
+    - task: VSTest@2
+      displayName: 'Run tests (rerun on failure)'
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **\bin\$(buildConfiguration)\UnitTestProject1.dll
+          !**\*TestAdapter.dll
+          !**\obj\**
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+        vsTestVersion: 'toolsInstaller'
+        rerunFailedTests: true
+        rerunType: 'basedOnTestFailurePercentage'
+        rerunFailedThreshold: 100
+        rerunMaxAttempts: 2
+        failOnMinTestsNotRun: false
         failTaskOnFailedTests: false
-      condition: always()
+        resultsFolder: '$(Agent.TempDirectory)\TestResults'
+      continueOnError: true
