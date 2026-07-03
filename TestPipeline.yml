@@ -37,6 +37,14 @@ stages:
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
+    # Download the VSTest platform from NuGet so the self-hosted agent does not
+    # need a Visual Studio installation to run tests.
+    - task: VisualStudioTestPlatformInstaller@1
+      displayName: 'Install VSTest platform'
+      inputs:
+        packageFeedSelector: 'nugetOrg'
+        versionSelector: 'latestStable'
+
     # VSTest@2 with rerunFailedTests=true so the deliberately-flaky test
     # fails once, passes on rerun, and ADO records it as a rerun-passed
     # flaky candidate. prc_MarkTestCaseRefsFlaky only inserts rows for
@@ -51,6 +59,7 @@ stages:
           !**\obj\**
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
+        vsTestVersion: 'toolsInstaller'
         rerunFailedTests: true
         rerunType: 'basedOnTestFailurePercentage'
         rerunFailedThreshold: 100
