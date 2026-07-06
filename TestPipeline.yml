@@ -44,6 +44,7 @@ stages:
     # so no VisualStudioTestPlatformInstaller step is needed.
     - task: VSTest@2
       displayName: 'Run tests (rerun on failure)'
+      continueOnError: true
       inputs:
         testSelector: 'testAssemblies'
         testAssemblyVer2: |
@@ -56,13 +57,15 @@ stages:
         rerunFailedTests: true
         rerunType: 'basedOnTestFailurePercentage'
         rerunFailedThreshold: 100
-        rerunMaxAttempts: 2
+        rerunMaxAttempts: 3
+        rerunFailedTestCasesMaxLimit: 100
         failOnMinTestsNotRun: false
-        # Let flakiness drive the build result: a test that fails then passes on
-        # rerun surfaces as partiallySucceeded. Project-level flaky management then
-        # suppresses KNOWN flaky tests (IsTestResultFlaky=1) -> succeeded. This is
-        # what makes the pre-fix (partiallySucceeded) vs post-fix (succeeded) flip
-        # visible at the build-status level. continueOnError/failTaskOnFailedTests
-        # masking removed so the signal is not swallowed.
+        # continueOnError:true -> when the OLD reader is deployed and the PR build's
+        # failures are NOT recognized as flaky, the VSTest task fails but is demoted to
+        # a warning, so the build ends PARTIALLYSUCCEEDED (not failed). When the NEW
+        # reader is deployed the failures are suppressed, the task succeeds, and the
+        # build is SUCCEEDED. That is the pre-fix vs post-fix status flip.
+        # rerunFailedTestCasesMaxLimit:100 + rerunFailedThreshold:100 ensure reruns
+        # always run even when many tests fail on the first attempt.
         failTaskOnFailedTests: false
         resultsFolder: '$(Agent.TempDirectory)\TestResults'
