@@ -58,6 +58,11 @@ stages:
         rerunFailedThreshold: 100
         rerunMaxAttempts: 2
         failOnMinTestsNotRun: false
+        # Let flakiness drive the build result: a test that fails then passes on
+        # rerun surfaces as partiallySucceeded. Project-level flaky management then
+        # suppresses KNOWN flaky tests (IsTestResultFlaky=1) -> succeeded. This is
+        # what makes the pre-fix (partiallySucceeded) vs post-fix (succeeded) flip
+        # visible at the build-status level. continueOnError/failTaskOnFailedTests
+        # masking removed so the signal is not swallowed.
         failTaskOnFailedTests: false
         resultsFolder: '$(Agent.TempDirectory)\TestResults'
-      continueOnError: true
