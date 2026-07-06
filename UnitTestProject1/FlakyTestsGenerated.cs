@@ -13,25 +13,15 @@ namespace UnitTestProject1
     {
         private static void RunFlaky(int idx)
         {
-            var reason = Environment.GetEnvironmentVariable("BUILD_REASON") ?? "";
-            var sourceBranch = Environment.GetEnvironmentVariable("BUILD_SOURCEBRANCH") ?? "";
-            bool isPullRequest =
-                reason.Equals("PullRequest", StringComparison.OrdinalIgnoreCase) ||
-                sourceBranch.StartsWith("refs/pull/", StringComparison.OrdinalIgnoreCase);
-
-            if (isPullRequest)
-            {
-                // PR build: HARD-FAIL on every attempt so a persisted failure exists.
-                // Whether the build ends succeeded (post-fix: ref is known-flaky under
-                // refs/heads/master -> failure suppressed) or partiallySucceeded
-                // (pre-fix: OLD reader looks up bare 'master', misses, failure counts)
-                // is then decided entirely by the flaky reader sproc + the project's
-                // "Flaky tests included in test pass percentage" (unchecked) setting.
-                Assert.Fail($"PR build hard-fail {idx} (flaky reader decides build status)");
-            }
-
-            // Rolling build (refs/heads/master): fail-once-then-pass so the writer
-            // (prc_MarkTestCaseRefsFlaky) marks the ref flaky under refs/heads/master.
+            // Fail-once-then-pass-on-rerun in EVERY build (rolling and PR). This is a
+            // genuinely flaky signal: VSTest records the first-attempt failure and the
+            // rerun pass. That makes the build partiallySucceeded UNLESS the result is
+            // recognized as a KNOWN flaky test and suppressed by project-level flaky
+            // management ("flaky NOT included in pass %"). Whether it is recognized
+            // depends entirely on the reader sproc:
+            //   NEW reader: normalizes bare 'master' -> refs/heads/master -> finds the
+            //               flaky mark (seeded by rolling builds) -> suppressed -> succeeded
+            //   OLD reader: looks up bare 'master' -> misses -> counted -> partiallySucceeded
             var buildId = Environment.GetEnvironmentVariable("BUILD_BUILDID") ?? "local";
             var marker = Path.Combine(Path.GetTempPath(), $"flaky-{buildId}-{idx}.txt");
             if (!File.Exists(marker))
