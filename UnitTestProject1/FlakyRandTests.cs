@@ -78,5 +78,29 @@ namespace UnitTestProject1
 
         [TestMethod]
         public void FlakyRand_12() => RunFlaky(12);
+
+        [TestMethod]
+        public void FlakyRand_13() => RunFlaky(13);
+
+        [TestMethod]
+        public void FlakyRand_14() => RunFlaky(14);
+
+        [TestMethod]
+        public void FlakyRand_15() => RunFlaky(15);
+
+        [TestMethod]
+        public void FlakyRand_16() => RunFlaky(16);
+
+        [TestMethod]
+        public void FlakyRand_17() => RunFlaky(17);
+
+        [TestMethod]
+        public void FlakyRand_18() => RunFlaky(18);
+
+        [TestMethod]
+        public void FlakyRand_19() => RunFlaky(19);
+
+        [TestMethod]
+        public void FlakyRand_20() => RunFlaky(20);
     }
 }

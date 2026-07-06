@@ -57,7 +57,7 @@ stages:
         rerunFailedTests: true
         rerunType: 'basedOnTestFailurePercentage'
         rerunFailedThreshold: 100
-        rerunMaxAttempts: 3
+        rerunMaxAttempts: 2
         rerunFailedTestCasesMaxLimit: 100
         failOnMinTestsNotRun: false
         # continueOnError:true -> when the OLD reader is deployed and the PR build's
