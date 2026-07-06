@@ -3,13 +3,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTestProject1
 {
-    // Branch-key A/B/A repro (fresh TestCaseRefIds). 12 tests.
-    //  - ROLLING build (refs/heads/master): GENUINELY RANDOM (~50% fail per attempt).
-    //    With rerunMaxAttempts=3 a test that fails then passes on a rerun becomes a
-    //    flaky candidate and is marked flaky under refs/heads/master. Run the rolling
-    //    pipeline repeatedly until ALL 12 refs are marked flaky (marks accumulate).
-    //  - PR build (refs/pull/*): HARD-FAIL every attempt so each ref has a Failed
-    //    result. The reader sproc alone decides the build status:
+    // Branch-key A/B/A repro (customer case, genuinely flaky tests).
+    //  Every attempt is GENUINELY RANDOM (~50% fail) in ALL contexts (rolling AND PR).
+    //  This faithfully mirrors the customer scenario: real flaky tests that sometimes
+    //  fail across all rerun attempts. The reader sproc alone decides the build status
+    //  for whichever tests end up Failed:
     //      OLD reader (pre-fix):  looks up bare 'master' -> misses the refs/heads/master
     //                             marks -> failures counted -> build PARTIALLYSUCCEEDED.
     //      NEW reader (post-fix): normalizes bare 'master' -> refs/heads/master -> finds
@@ -27,19 +25,8 @@ namespace UnitTestProject1
 
         private static void RunFlaky(int idx)
         {
-            var reason = Environment.GetEnvironmentVariable("BUILD_REASON") ?? "";
-            var sourceBranch = Environment.GetEnvironmentVariable("BUILD_SOURCEBRANCH") ?? "";
-            bool isPullRequest =
-                reason.Equals("PullRequest", StringComparison.OrdinalIgnoreCase) ||
-                sourceBranch.StartsWith("refs/pull/", StringComparison.OrdinalIgnoreCase);
-
-            if (isPullRequest)
-            {
-                Assert.Fail($"PR build hard-fail {idx} (reader sproc decides build status)");
-            }
-
             if (NextFail())
-                Assert.Fail($"Random flaky failure {idx} (rolling)");
+                Assert.Fail($"Random flaky failure {idx}");
             Assert.IsTrue(true);
         }
 
